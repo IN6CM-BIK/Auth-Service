@@ -41,9 +41,21 @@ namespace BIK.AuthService.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            Console.WriteLine($"[AuthService] Intentando login para: '{request.Identificador}'");
             var user = await _repository.GetUserByIdentifierAsync(request.Identificador);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null)
+            {
+                Console.WriteLine($"[AuthService] ERROR: Usuario '{request.Identificador}' no fue encontrado en la base de datos.");
+                return Unauthorized(new { status = "error", message = "Credenciales inválidas" });
+            }
+
+            Console.WriteLine($"[AuthService] Usuario encontrado. Email: '{user.Email}', DPI: '{user.Dpi}', Estado: '{user.Estado}', Rol: '{user.Rol}'");
+            
+            bool isPasswordCorrect = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            Console.WriteLine($"[AuthService] Verificación de contraseña para '{request.Identificador}': {isPasswordCorrect}");
+
+            if (!isPasswordCorrect)
             {
                 return Unauthorized(new { status = "error", message = "Credenciales inválidas" });
             }
